@@ -1,0 +1,36 @@
+/**
+ * Evaluator
+ * Traverses the AST and computes the numeric result.
+ */
+public class Evaluator {
+
+    public double evaluate(ASTNode node) {
+        if (node == null)
+            throw new RuntimeException("Eval Error: Null AST node");
+
+        // Leaf — number literal
+        if (node.left == null && node.right == null && !node.isUnary) {
+            return Double.parseDouble(node.value);
+        }
+
+        // Unary minus
+        if (node.isUnary) {
+            return -evaluate(node.left);
+        }
+
+        // Binary operator
+        double left  = evaluate(node.left);
+        double right = evaluate(node.right);
+
+        switch (node.value) {
+            case "+": return left + right;
+            case "-": return left - right;
+            case "*": return left * right;
+            case "/":
+                if (right == 0) throw new RuntimeException("Eval Error: Division by zero");
+                return left / right;
+            default:
+                throw new RuntimeException("Eval Error: Unknown operator '" + node.value + "'");
+        }
+    }
+}
