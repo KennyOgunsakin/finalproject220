@@ -1,0 +1,37 @@
+/**
+ * AST Node — represents a node in the Abstract Syntax Tree.
+ * Leaf nodes hold a number value; internal nodes hold an operator.
+ */
+public class ASTNode {
+    public final String value;   // operator (+, -, *, /) or number
+    public ASTNode left;
+    public ASTNode right;
+    public boolean isUnary;      // true for unary minus
+
+    public ASTNode(String value) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+        this.isUnary = false;
+    }
+
+    /** Build a text representation of the tree (indented). */
+    public String toTreeString(String indent, boolean isRight) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(indent);
+        sb.append(isRight ? "└── " : "├── ");
+        sb.append(isUnary ? "u-" : "").append(value).append("\n");
+
+        String childIndent = indent + (isRight ? "    " : "│   ");
+        if (left != null)  sb.append(left.toTreeString(childIndent, right == null));
+        if (right != null) sb.append(right.toTreeString(childIndent, true));
+        return sb.toString();
+    }
+
+    /** Compact inline representation (mirrors the sample output style). */
+    public String toInlineString() {
+        if (left == null && right == null) return value;
+        if (isUnary) return "(-" + left.toInlineString() + ")";
+        return "(" + left.toInlineString() + " " + value + " " + right.toInlineString() + ")";
+    }
+}
