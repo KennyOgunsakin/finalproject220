@@ -1,0 +1,56 @@
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Lexical Analyzer (Tokenizer)
+ * Converts the input string into a list of valid tokens.
+ */
+public class Lexer {
+    private final String input;
+    private int pos;
+
+    public Lexer(String input) {
+        this.input = input.trim();
+        this.pos = 0;
+    }
+
+    public List<Token> tokenize() {
+        List<Token> tokens = new ArrayList<>();
+
+        while (pos < input.length()) {
+            char current = input.charAt(pos);
+
+            // Skip whitespace
+            if (Character.isWhitespace(current)) {
+                pos++;
+                continue;
+            }
+
+            // Numbers (multi-digit supported)
+            if (Character.isDigit(current)) {
+                StringBuilder sb = new StringBuilder();
+                while (pos < input.length() && Character.isDigit(input.charAt(pos))) {
+                    sb.append(input.charAt(pos++));
+                }
+                tokens.add(new Token(Token.Type.NUMBER, sb.toString()));
+                continue;
+            }
+
+            // Operators and parentheses
+            switch (current) {
+                case '+': tokens.add(new Token(Token.Type.PLUS,     "+")); break;
+                case '-': tokens.add(new Token(Token.Type.MINUS,    "-")); break;
+                case '*': tokens.add(new Token(Token.Type.MULTIPLY, "*")); break;
+                case '/': tokens.add(new Token(Token.Type.DIVIDE,   "/")); break;
+                case '(': tokens.add(new Token(Token.Type.LPAREN,   "(")); break;
+                case ')': tokens.add(new Token(Token.Type.RPAREN,   ")")); break;
+                default:
+                    throw new RuntimeException("Lexer Error: Unexpected character '" + current + "'");
+            }
+            pos++;
+        }
+
+        tokens.add(new Token(Token.Type.EOF, "EOF"));
+        return tokens;
+    }
+}
