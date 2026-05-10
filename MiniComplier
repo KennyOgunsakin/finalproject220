@@ -1,0 +1,134 @@
+import java.util.List;
+import java.util.Scanner;
+
+/**
+ * MiniCompiler — main entry point.
+ *
+ * Runs the full compilation pipeline:
+ *   1. Lexical Analysis  (Tokenizer)
+ *   2. Parsing           (Grammar-Based Validator)
+ *   3. Syntax Tree Build (AST Generator)
+ *   4. Evaluation        (AST Traversal)
+ *   5. Trace Output      (Token stream, parse result, tree, result)
+ */
+public class MiniCompiler {
+
+    public static void compile(String expression) {
+        System.out.println("=".repeat(55));
+        System.out.println("Expression: " + expression);
+        System.out.println("=".repeat(55));
+
+        // ── Phase 1: Lexical Analysis ──────────────────────────────
+        List<Token> tokens;
+        try {
+            Lexer lexer = new Lexer(expression);
+            tokens = lexer.tokenize();
+        } catch (RuntimeException e) {
+            System.out.println("[LEXER ERROR] " + e.getMessage());
+            return;
+        }
+
+        // Print token stream (exclude EOF for display)
+        System.out.print("Tokens: [");
+        for (int i = 0; i < tokens.size(); i++) {
+            if (tokens.get(i).type == Token.Type.EOF) break;
+            System.out.print(tokens.get(i).value);
+            if (i < tokens.size() - 2) System.out.print(", ");
+        }
+        System.out.println("]");
+
+        // ── Phase 2 & 3: Parsing + AST Build ──────────────────────
+        ASTNode root;
+        try {
+            Parser parser = new Parser(tokens);
+            root = parser.parse();
+            System.out.println("Parse Result: SUCCESS");
+        } catch (RuntimeException e) {
+            System.out.println("Parse Result: FAILURE — " + e.getMessage());
+            return;
+        }
+
+        // ── Trace: Expression Tree ─────────────────────────────────
+        System.out.println("\nExpression Tree:");
+        // Pretty indented tree
+        System.out.println(buildTreeDisplay(root, "", true));
+
+        // Inline compact form
+        System.out.println("Inline form: " + root.toInlineString());
+
+        // ── Phase 4: Evaluation ────────────────────────────────────
+        try {
+            Evaluator evaluator = new Evaluator();
+            double result = evaluator.evaluate(root);
+            // Print as int if whole number, otherwise decimal
+            if (result == Math.floor(result) && !Double.isInfinite(result))
+                System.out.println("\nEvaluation Result: " + (long) result);
+            else
+                System.out.println("\nEvaluation Result: " + result);
+        } catch (RuntimeException e) {
+            System.out.println("[EVALUATOR ERROR] " + e.getMessage());
+        }
+    }
+
+    /** Recursive pretty-printer for the AST. */
+    private static String buildTreeDisplay(ASTNode node, String prefix, boolean isTail) {
+        if (node == null) return "";
+        StringBuilder sb = new StringBuilder();
+        sb.append(prefix).append(isTail ? "└── " : "├── ");
+        sb.append(node.isUnary ? "u(" + node.value + ")" : node.value).append("\n");
+
+        String childPrefix = prefix + (isTail ? "    " : "│   ");
+        List<ASTNode> children = new java.util.ArrayList<>();
+        if (node.left  != null) children.add(node.left);
+        if (node.right != null) children.add(node.right);
+
+        for (int i = 0; i < children.size(); i++) {
+            sb.append(buildTreeDisplay(children.get(i), childPrefix, i == children.size() - 1));
+        }
+        return sb.toString();
+    }
+
+    // ── Entry Point ────────────────────────────────────────────────
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("╔══════════════════════════════════════════╗");
+        System.out.println("║       Mini Expression Compiler           ║");
+        System.out.println("║       CSC220 — Spring 2026               ║");
+        System.out.println("╚══════════════════════════════════════════╝");
+        System.out.println();
+
+        // Run built-in test cases from the assignment
+        System.out.println("── Built-in Test Cases ─────────────────────────────────\n");
+
+        String[] testCases = {
+            "(3 + 2) * 5 - 1",    // sample from assignment → 24
+            "3 + 4 * 2",          // valid — tests precedence → 11
+            "(1 + 2) * (3 + 4)",  // parentheses → 21
+            "-3",                 // unary minus → -3
+            "3 + * 5",            // invalid: two operators
+            "()",                 // invalid: empty parens
+            "3 + (4 -)",          // invalid: missing operand
+        };
+
+        for (String tc : testCases) {
+            compile(tc);
+            System.out.println();
+        }
+
+        // Interactive mode
+        System.out.println("── Interactive Mode (type 'quit' to exit) ───────────────\n");
+        while (true) {
+            System.out.print("Enter expression: ");
+            String line = scanner.nextLine().trim();
+            if (line.equalsIgnoreCase("quit") || line.equalsIgnoreCase("exit")) break;
+            if (line.isEmpty()) continue;
+            compile(line);
+            System.out.println();
+        }
+
+        System.out.println("Goodbye!");
+        scanner.close();
+    }
+}
