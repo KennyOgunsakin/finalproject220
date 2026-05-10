@@ -1,0 +1,117 @@
+import java.util.List;
+
+/**
+ * Grammar-Based Parser (Recursive Descent)
+ *
+ * Grammar:
+ *   E → E + T | E - T | T
+ *   T → T * F | T / F | F
+ *   F → (E) | number | -F        (unary minus added)
+ *
+ * Rewritten to avoid left-recursion:
+ *   E  → T E'
+ *   E' → + T E' | - T E' | ε
+ *   T  → F T'
+ *   T' → * F T' | / F T' | ε
+ *   F  → (E) | -F | number
+ */
+public class Parser {
+    private final List<Token> tokens;
+    private int pos;
+
+    public Parser(List<Token> tokens) {
+        this.tokens = tokens;
+        this.pos = 0;
+    }
+
+    // ── helpers ────────────────────────────────────────────────────────────
+
+    private Token current() { return tokens.get(pos); }
+
+    private Token consume(Token.Type expected) {
+        Token t = current();
+        if (t.type != expected)
+            throw new RuntimeException("Parse Error: Expected " + expected + " but found '" + t.value + "'");
+        pos++;
+        return t;
+    }
+
+    private boolean check(Token.Type type) { return current().type == type; }
+
+    // ── grammar rules ──────────────────────────────────────────────────────
+
+    /** E → T E' */
+    public ASTNode parseExpression() {
+        ASTNode node = parseTerm();
+        return parseExpressionPrime(node);
+    }
+
+    /** E' → + T E' | - T E' | ε */
+    private ASTNode parseExpressionPrime(ASTNode left) {
+        if (check(Token.Type.PLUS) || check(Token.Type.MINUS)) {
+            Token op = current(); pos++;
+            ASTNode right = parseTerm();
+            ASTNode node = new ASTNode(op.value);
+            node.left = left;
+            node.right = right;
+            return parseExpressionPrime(node);
+        }
+        return left; // ε
+    }
+
+    /** T → F T' */
+    private ASTNode parseTerm() {
+        ASTNode node = parseFactor();
+        return parseTermPrime(node);
+    }
+
+    /** T' → * F T' | / F T' | ε */
+    private ASTNode parseTermPrime(ASTNode left) {
+        if (check(Token.Type.MULTIPLY) || check(Token.Type.DIVIDE)) {
+            Token op = current(); pos++;
+            ASTNode right = parseFactor();
+            ASTNode node = new ASTNode(op.value);
+            node.left = left;
+            node.right = right;
+            return parseTermPrime(node);
+        }
+        return left; // ε
+    }
+
+    /** F → (E) | -F | number */
+    private ASTNode parseFactor() {
+        // Unary minus
+        if (check(Token.Type.MINUS)) {
+            pos++;
+            ASTNode operand = parseFactor();
+            ASTNode node = new ASTNode("-");
+            node.isUnary = true;
+            node.left = operand;
+            return node;
+        }
+
+        // Parenthesised expression
+        if (check(Token.Type.LPAREN)) {
+            pos++;
+            ASTNode node = parseExpression();
+            consume(Token.Type.RPAREN);
+            return node;
+        }
+
+        // Number literal
+        if (check(Token.Type.NUMBER)) {
+            Token t = current(); pos++;
+            return new ASTNode(t.value);
+        }
+
+        throw new RuntimeException("Parse Error: Unexpected token '" + current().value + "'");
+    }
+
+    /** Parse and verify the full input is consumed. */
+    public ASTNode parse() {
+        ASTNode root = parseExpression();
+        if (!check(Token.Type.EOF))
+            throw new RuntimeException("Parse Error: Unexpected token '" + current().value + "' after expression");
+        return root;
+    }
+}
