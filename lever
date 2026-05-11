@@ -1,43 +1,31 @@
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Lexical Analyzer (Tokenizer)
- * Converts the input string into a list of valid tokens.
- */
-public class Lexer {
+class Lexer {
     private final String input;
     private int pos;
 
-    public Lexer(String input) {
+    Lexer(String input) {
         this.input = input.trim();
-        this.pos = 0;
+        this.pos   = 0;
     }
 
-    public List<Token> tokenize() {
+    List<Token> tokenize() {
         List<Token> tokens = new ArrayList<>();
 
         while (pos < input.length()) {
-            char current = input.charAt(pos);
+            char c = input.charAt(pos);
 
-            // Skip whitespace
-            if (Character.isWhitespace(current)) {
-                pos++;
-                continue;
-            }
+            if (Character.isWhitespace(c)) { pos++; continue; }
 
-            // Numbers (multi-digit supported)
-            if (Character.isDigit(current)) {
+            // Multi-digit numbers
+            if (Character.isDigit(c)) {
                 StringBuilder sb = new StringBuilder();
-                while (pos < input.length() && Character.isDigit(input.charAt(pos))) {
+                while (pos < input.length() && Character.isDigit(input.charAt(pos)))
                     sb.append(input.charAt(pos++));
-                }
                 tokens.add(new Token(Token.Type.NUMBER, sb.toString()));
                 continue;
             }
 
-            // Operators and parentheses
-            switch (current) {
+            // Single-character tokens
+            switch (c) {
                 case '+': tokens.add(new Token(Token.Type.PLUS,     "+")); break;
                 case '-': tokens.add(new Token(Token.Type.MINUS,    "-")); break;
                 case '*': tokens.add(new Token(Token.Type.MULTIPLY, "*")); break;
@@ -45,7 +33,7 @@ public class Lexer {
                 case '(': tokens.add(new Token(Token.Type.LPAREN,   "(")); break;
                 case ')': tokens.add(new Token(Token.Type.RPAREN,   ")")); break;
                 default:
-                    throw new RuntimeException("Lexer Error: Unexpected character '" + current + "'");
+                    throw new RuntimeException("Lexer Error: Unexpected character '" + c + "'");
             }
             pos++;
         }
@@ -54,3 +42,4 @@ public class Lexer {
         return tokens;
     }
 }
+
