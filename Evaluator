@@ -1,22 +1,16 @@
-/**
- * Evaluator
- * Traverses the AST and computes the numeric result.
- */
-public class Evaluator {
+class Evaluator {
 
-    public double evaluate(ASTNode node) {
+    double evaluate(ASTNode node) {
         if (node == null)
             throw new RuntimeException("Eval Error: Null AST node");
 
-        // Leaf — number literal
-        if (node.left == null && node.right == null && !node.isUnary) {
+        // Leaf node — number literal
+        if (node.left == null && node.right == null && !node.isUnary)
             return Double.parseDouble(node.value);
-        }
 
         // Unary minus
-        if (node.isUnary) {
+        if (node.isUnary)
             return -evaluate(node.left);
-        }
 
         // Binary operator
         double left  = evaluate(node.left);
